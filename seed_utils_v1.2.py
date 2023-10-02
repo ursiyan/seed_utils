@@ -226,7 +226,6 @@ save_to_file_checkbox.pack(pady=10)
 result_text2 = tk.Text(frame2, width=50, height=20)
 result_text2.pack(pady=10)
 
-# Пакетирование виджета Notebook
 notebook.pack(expand=True, fill="both")
 
 root.mainloop()
