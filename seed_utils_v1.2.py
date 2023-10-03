@@ -19,12 +19,15 @@ def generate_ethereum_addresses(seed_phrase, num_addresses):
     master_key = mnemo.to_seed(seed_phrase)
 
     addresses = []
+    private_keys = []
     for i in range(num_addresses):
-        # Derive the Ethereum address using the custom derivation path
+        # Derive the Ethereum address and private key using the custom derivation path
         derived_account = Account.from_mnemonic(seed_phrase, account_path=DERIVATION_PATH.format(i))
         addresses.append(derived_account.address)
+        private_keys.append(derived_account.key.hex())
 
-    return addresses
+    return addresses, private_keys
+
 
 # Enable Mnemonic features
 Account.enable_unaudited_hdwallet_features()
@@ -106,30 +109,30 @@ def generate_addresses():
         messagebox.showerror("Error", "Please enter a valid number for addresses")
         return
 
-    ethereum_addresses = generate_ethereum_addresses(seed_phrase, num_addresses)
+    ethereum_addresses, private_keys = generate_ethereum_addresses(seed_phrase, num_addresses)
 
     result_text2.delete('1.0', tk.END)
-    for address in ethereum_addresses:
-        result_text2.insert(tk.END, address + '\n')
+    for i in range(num_addresses):
+        result_text2.insert(tk.END, f"Address {i + 1}:\n{ethereum_addresses[i]}\nPrivate Key {i + 1}:\n{private_keys[i]}\n\n")
 
     # Save to file if the checkbox is checked
     if save_to_file_var.get():
-        save_to_file2(ethereum_addresses)
+        save_to_file2(ethereum_addresses, private_keys)
 
-def save_to_file2(addresses):
+def save_to_file2(addresses, private_keys):
     try:
         with open("addresses.txt", "w") as file:
-            for address in addresses:
-                file.write(address + "\n")
+            for i in range(len(addresses)):
+                file.write(f"Address {i + 1}:\n{addresses[i]}\nPrivate Key {i + 1}:\n{private_keys[i]}\n\n")
         messagebox.showinfo("File Saved", "Addresses saved to addresses.txt")
     except Exception as e:
         messagebox.showerror("Error", f"Failed to save to file: {str(e)}")
 
 def generate_seed():
+
     global normal_seed
     global seed_phrase
     seed_phrase_s = seed_phrase
-    answer1 = seed_phrase_s
 
     seed_phrase = seed_phrase_s.split(" ")
 
@@ -184,6 +187,7 @@ def save_to_file():
 
 root = tk.Tk()
 root.title("BIP39 Seed Phrase Restore")
+root.iconbitmap(default='icon.ico')  # Replace 'icon.ico' with your icon file
 
 # Создание виджета Notebook
 notebook = ttk.Notebook(root)
@@ -218,14 +222,15 @@ num_addresses_label.pack(pady=5)
 num_addresses_entry = tk.Entry(frame2, width=10)
 num_addresses_entry.pack(pady=5)
 
-generate_button2 = tk.Button(frame2, text="Сгенерировать адреса", command=generate_addresses)
+generate_button2 = tk.Button(frame2, text="Generate Addresses", command=generate_addresses)
 generate_button2.pack(pady=10)
 save_to_file_checkbox = tk.Checkbutton(frame2, text="Сохранить адреса в файл", variable=save_to_file_var)
 save_to_file_checkbox.pack(pady=10)
-
-result_text2 = tk.Text(frame2, width=50, height=20)
+toggle_var = tk.IntVar()
+result_text2 = tk.Text(frame2, width=80, height=20)
 result_text2.pack(pady=10)
 
+# Пакетирование виджета Notebook
 notebook.pack(expand=True, fill="both")
 
 root.mainloop()
