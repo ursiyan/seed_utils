@@ -12,27 +12,6 @@ seed_phrase_index = ""
 seed_phrase_binary = ""
 ethereum_addresses = ""
 
-
-
-# Function to generate Ethereum addresses from a seed phrase
-def generate_ethereum_addresses_with_toggle(seed_phrase, num_addresses, toggle_state):
-    addresses = []
-    private_keys = []
-    for i in range(num_addresses):
-        # Derive the Ethereum address and private key using the custom derivation path
-        derived_account = Account.from_mnemonic(seed_phrase, account_path=DERIVATION_PATH.format(i))
-        if toggle_state == 1:  # Show only private addresses
-            addresses.append("")
-            private_keys.append(derived_account.key.hex())
-        elif toggle_state == 2:  # Show only public addresses
-            addresses.append(derived_account.address)
-            private_keys.append("")
-        else:  # Show both public and private addresses
-            addresses.append(derived_account.address)
-            private_keys.append(derived_account.key.hex())
-
-    return addresses, private_keys
-
 # Enable Mnemonic features
 Account.enable_unaudited_hdwallet_features()
 class SeedPhraseInputApp:
@@ -104,6 +83,25 @@ class SeedPhraseInputApp:
         print("Seed Phrase:", seed_phrase)
         return seed_phrase
 
+# Function to generate Ethereum addresses from a seed phrase
+def generate_ethereum_addresses_with_toggle(seed_phrase, num_addresses, toggle_state):
+    addresses = []
+    private_keys = []
+    for i in range(num_addresses):
+        # Derive the Ethereum address and private key using the custom derivation path
+        derived_account = Account.from_mnemonic(seed_phrase, account_path=DERIVATION_PATH.format(i))
+        if toggle_state == 1:  # Show only private addresses
+            addresses.append("")
+            private_keys.append(derived_account.key.hex())
+        elif toggle_state == 2:  # Show only public addresses
+            addresses.append(derived_account.address)
+            private_keys.append("")
+        else:  # Show both public and private addresses
+            addresses.append(derived_account.address)
+            private_keys.append(derived_account.key.hex())
+
+    return addresses, private_keys
+
 def generate_addresses():
     num_addresses_label["text"] = "Количество генерируемых адресов:"
 
@@ -134,7 +132,6 @@ def save_to_file2(addresses, private_keys):
         messagebox.showinfo("File Saved", "Addresses saved to addresses.txt")
     except Exception as e:
         messagebox.showerror("Error", f"Failed to save to file: {str(e)}")
-
 
 def generate_seed():
 
