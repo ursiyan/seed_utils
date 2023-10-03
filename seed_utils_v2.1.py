@@ -4,7 +4,6 @@ from tkinter import ttk,messagebox
 from eth_account import Account
 import requests
 from web3 import Web3
-from mnemonic import Mnemonic
 
 normal_seed = ""
 seed_phrase = ""
@@ -16,6 +15,8 @@ ethereum_addresses = ""
 
 # Enable Mnemonic features
 Account.enable_unaudited_hdwallet_features()
+
+# Top Tab with seed input
 class SeedPhraseInputApp:
     def __init__(self, master):
         self.master = master
@@ -85,71 +86,9 @@ class SeedPhraseInputApp:
         print("Seed Phrase:", seed_phrase)
         return seed_phrase
 # Function to generate Ethereum addresses from a seed phrase
-def generate_ethereum_addresses_with_toggle(seed_phrase, num_addresses, toggle_state):
-    addresses = []
-    private_keys = []
-    for i in range(num_addresses):
-        # Derive the Ethereum address and private key using the custom derivation path
-        derived_account = Account.from_mnemonic(seed_phrase, account_path=DERIVATION_PATH.format(i))
-        if toggle_state == 1:  # Show only private addresses
-            addresses.append("")
-            private_keys.append(derived_account.key.hex())
-        elif toggle_state == 2:  # Show only public addresses
-            addresses.append(derived_account.address)
-            private_keys.append("")
-        else:  # Show both public and private addresses
-            addresses.append(derived_account.address)
-            private_keys.append(derived_account.key.hex())
 
-    return addresses, private_keys
-def generate_addresses():
-    num_addresses_label["text"] = "Количество генерируемых адресов:"
 
-    try:
-        num_addresses = int(num_addresses_entry.get())
-        if num_addresses < 1:
-            raise ValueError("Number of addresses should be at least 1")
-    except ValueError:
-        messagebox.showerror("Error", "Please enter a valid number for addresses")
-        return
-
-    toggle_state = toggle_var.get()  # Get the toggle state
-
-    ethereum_addresses, private_keys = generate_ethereum_addresses_with_toggle(seed_phrase, num_addresses, toggle_state)
-
-    result_text2.delete('1.0', tk.END)
-
-    for i in range(num_addresses):
-        if toggle_state == 1:  # Show only private addresses
-            content = f"{private_keys[i]}\n"
-        elif toggle_state == 2:  # Show only public addresses
-            content = f"{ethereum_addresses[i]}\n"
-        else:  # Show both public and private addresses
-            content = f"{ethereum_addresses[i]}\n{private_keys[i]}\n"
-
-        # Insert the content into the result_text2 widget
-        result_text2.insert(tk.END, content)
-
-    # Save the content to a file if required
-    if save_to_file_var.get():
-        if toggle_state == 1:
-            save_to_file2(private_keys)
-        elif toggle_state == 2:
-            save_to_file2(ethereum_addresses)
-        else:
-            save_to_file2(ethereum_addresses, private_keys)
-def save_to_file2(data1, data2=None):
-    try:
-        with open("addresses.txt", "w") as file:
-            if data2 is None:
-                for item in data1:
-                    file.write(f"{item}\n")
-            else:
-                for item1, item2 in zip(data1, data2):
-                    file.write(f"{item1}\n{item2}\n")
-        messagebox.showinfo("File Saved", "Addresses saved to addresses.txt")
-    except Exception as e:
-        messagebox.showerror("Error", f"Failed to save to file: {str(e)}")
+# 1 Tab
 def generate_seed():
 
     global normal_seed
@@ -198,14 +137,129 @@ def generate_seed():
     result_text1.delete("1.0", tk.END)
     result_text1.insert(tk.END, normal_seed)
 
-    if save_to_file2.get():
+    if save_to_file_var.get():
         save_to_file()
 def save_to_file():
     global normal_seed
-    with open("answer.txt", "w") as answer_file:
+    with open("seeds.txt", "w") as answer_file:
         answer_file.write(normal_seed)
     messagebox.showinfo("File Saved", "Results saved to answer.txt")
 
+
+# 2 Tab
+def generate_ethereum_addresses_with_toggle(seed_phrase, num_addresses, toggle_state):
+    addresses = []
+    private_keys = []
+    for i in range(num_addresses):
+        # Derive the Ethereum address and private key using the custom derivation path
+        derived_account = Account.from_mnemonic(seed_phrase, account_path=DERIVATION_PATH.format(i))
+        if toggle_state == 1:  # Show only private addresses
+            addresses.append("")
+            private_keys.append(derived_account.key.hex())
+        elif toggle_state == 2:  # Show only public addresses
+            addresses.append(derived_account.address)
+            private_keys.append("")
+        else:  # Show both public and private addresses
+            addresses.append(derived_account.address)
+            private_keys.append(derived_account.key.hex())
+
+    return addresses, private_keys
+def generate_addresses():
+    num_addresses_label["text"] = "Amount of addresses:"
+
+    try:
+        num_addresses = int(num_addresses_entry.get())
+        if num_addresses < 1:
+            raise ValueError("Number of addresses should be at least 1")
+    except ValueError:
+        messagebox.showerror("Error", "Please enter a valid number for addresses")
+        return
+
+    toggle_state = toggle_var.get()  # Get the toggle state
+
+    ethereum_addresses, private_keys = generate_ethereum_addresses_with_toggle(seed_phrase, num_addresses, toggle_state)
+
+    result_text2.delete('1.0', tk.END)
+
+    for i in range(num_addresses):
+        if toggle_state == 1:  # Show only private addresses
+            content = f"{private_keys[i]}\n"
+        elif toggle_state == 2:  # Show only public addresses
+            content = f"{ethereum_addresses[i]}\n"
+        else:  # Show both public and private addresses
+            content = f"{ethereum_addresses[i]}\n{private_keys[i]}\n"
+
+        # Insert the content into the result_text2 widget
+        result_text2.insert(tk.END, content)
+
+    # Save the content to a file if required
+    if save_to_file_var.get():
+        if toggle_state == 1:
+            save_to_file2(private_keys)
+        elif toggle_state == 2:
+            save_to_file2(ethereum_addresses)
+        else:
+            save_to_file2(ethereum_addresses, private_keys)
+def save_to_file2(data1, data2=None):
+    try:
+        with open("addresses.txt", "w") as file:
+            if data2 is None:
+                for item in data1:
+                    file.write(f"{item}\n")
+            else:
+                for item1, item2 in zip(data1, data2):
+                    file.write(f"{item1}\n{item2}\n")
+        messagebox.showinfo("File Saved", "Addresses saved to addresses.txt")
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to save to file: {str(e)}")
+
+
+# 3 Tab
+def generate_addresses_from_file():
+    global seed_phrase
+
+    # Clear the existing content in result_text3
+    result_text3.delete('1.0', tk.END)
+
+    try:
+        # Read seed phrases from the file
+        with open('seeds.txt', 'r') as file:
+            seed_phrases = [line.strip() for line in file.readlines() if line.strip()]
+
+        toggle_state = toggle_var.get()  # Get the toggle state
+        format_option = format_var.get()  # Get the selected format option
+
+        for seed_phrase in seed_phrases:
+            addresses, private_keys = generate_ethereum_addresses_with_toggle(seed_phrase, 1, toggle_state)
+
+            if format_option == 1:  # Show only private addresses
+                result_text3.insert(tk.END, f"{private_keys[0]}\n")
+            elif format_option == 2:  # Show only public addresses
+                result_text3.insert(tk.END, f"{addresses[0]}\n")
+            else:  # Show both public and private addresses
+                result_text3.insert(tk.END, f"Seed Phrase: {seed_phrase}\n")
+                result_text3.insert(tk.END, f"Public Address: {addresses[0]}\n")
+                result_text3.insert(tk.END, f"Private Address: {private_keys[0]}\n")
+                result_text3.insert(tk.END, '\n')
+
+        # Call save_to_file3 to save the content to a file
+        save_to_file3()
+    except FileNotFoundError:
+        messagebox.showerror("File Not Found", "The file 'seeds.txt' was not found.")
+def save_to_file3():
+    try:
+        # Get the content from result_text3
+        content = result_text3.get("1.0", tk.END)
+
+        with open("addresses.txt", "w") as file:
+            file.write(content)
+
+        messagebox.showinfo("File Saved", "Addresses saved to addresses.txt")
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to save to file: {str(e)}")
+
+
+# 4 Tab
 def check_balance(result_text_widget):
     web3_ethereum = Web3(Web3.HTTPProvider('https://eth-mainnet.g.alchemy.com/v2/rnfs9hVk83RyXM3Rtf6jJqmG05bDY-tc'))
     web3_arbitrum = Web3(Web3.HTTPProvider('https://arb1.arbitrum.io/rpc'))
@@ -226,7 +280,7 @@ def check_balance(result_text_widget):
         'Polygon': web3_polygon
     }
 
-    result_text3 = ""  # Initialize an empty string to store the results
+    result_text4 = ""  # Initialize an empty string to store the results
 
     # Function to get token balances for an address from Etherscan API
     def get_token_balances(address, api_key):
@@ -238,31 +292,30 @@ def check_balance(result_text_widget):
             return token_balances
 
     for address in addresses:
-        result_text3 += f'\nChecking address: {address}\n'
+        result_text4 += f'\nChecking address: {address}\n'
         for network_name, web3 in networks.items():
             # Check ETH balance
             eth_balance = web3.eth.get_balance(address)
             # Convert wei to ether
             eth_balance_eth = web3.from_wei(eth_balance, 'ether')
-            result_text3 += f'{network_name} balance: {eth_balance_eth}\n'
+            result_text4 += f'{network_name} balance: {eth_balance_eth}\n'
 
             # Check token balances
             # token_balances = get_token_balances(address, 'BACNF21ANHGIW4D1QYU3K5ASEHYEQAQAI4')
             # if token_balances is not None:
-            #     result_text3 += f'{network_name} Token balances for {address}:\n'
-            #     result_text3 += str(token_balances) + '\n'
+            #     result_text4 += f'{network_name} Token balances for {address}:\n'
+            #     result_text4 += str(token_balances) + '\n'
             # else:
-            #     result_text3 += f'Token balances could not be retrieved for {address}.\n'
+            #     result_text4 += f'Token balances could not be retrieved for {address}.\n'
 
     result_text_widget.delete('1.0', tk.END)
-    result_text_widget.insert(tk.END, result_text3)
-
+    result_text_widget.insert(tk.END, result_text4)
 def display_addresses_content():
-    result_text3.delete('1.0', tk.END)
+    result_text4.delete('1.0', tk.END)
     try:
         with open('addresses.txt', 'r') as file:
             addresses_content = file.read()
-            result_text3.insert(tk.END, addresses_content)
+            result_text4.insert(tk.END, addresses_content)
     except FileNotFoundError:
         messagebox.showerror("File Not Found", "The file 'addresses.txt' was not found.")
 
@@ -271,35 +324,35 @@ def display_addresses_content():
 root = tk.Tk()
 root.title("BIP39 Seed Phrase Restore")
 root.iconbitmap(default='icon.ico')  # Replace 'icon.ico' with your icon file
-# Создание виджета Notebook
+
+# Create Notebook
 notebook = ttk.Notebook(root)
 
-# Создание первой вкладки
+# 1 Tab
 frame1 = ttk.Frame(notebook)
 notebook.add(frame1, text="Restore Seed")
 
-generate_button1 = tk.Button(frame1, text="Сгенерировать сид", command=generate_seed)
+generate_button1 = tk.Button(frame1, text="Find seeds", command=generate_seed)
 generate_button1.pack(pady=10)
 save_to_file_var = tk.BooleanVar()
-save_to_file_checkbox = tk.Checkbutton(frame1, text="Сохранить в файл", variable=save_to_file_var)
+save_to_file_checkbox = tk.Checkbutton(frame1, text="Save to file", variable=save_to_file_var)
 save_to_file_checkbox.pack(pady=10)
 result_text1 = tk.Text(frame1, width=90, height=20)
 result_text1.pack(pady=10)
 
 
-# Создание второй вкладки
+# 2 Tab
 frame2 = ttk.Frame(notebook)
 notebook.add(frame2, text="Find Derived Addresses")
 
-# Добавление содержимого второй вкладки
 app = SeedPhraseInputApp(root)
-num_addresses_label = tk.Label(frame2, text="Количество генерируемых адресов:")
+num_addresses_label = tk.Label(frame2, text="Amount of addresses:")
 num_addresses_label.pack(pady=5)
 num_addresses_entry = tk.Entry(frame2, width=10)
 num_addresses_entry.pack(pady=5)
 generate_button2 = tk.Button(frame2, text="Generate Addresses", command=generate_addresses)
 generate_button2.pack(pady=10)
-save_to_file_checkbox = tk.Checkbutton(frame2, text="Сохранить адреса в файл", variable=save_to_file_var)
+save_to_file_checkbox = tk.Checkbutton(frame2, text="Save to file", variable=save_to_file_var)
 save_to_file_checkbox.pack(pady=10)
 toggle_var = tk.IntVar()
 private_toggle = tk.Radiobutton(frame2, text="Private Addresses Only", variable=toggle_var, value=1)
@@ -311,21 +364,41 @@ both_toggle.pack(anchor=tk.W)
 result_text2 = tk.Text(frame2, width=80, height=20)
 result_text2.pack(pady=10)
 
+
+# 3 Tab
 frame3 = ttk.Frame(notebook)
-notebook.add(frame3, text="Check Balance")
+notebook.add(frame3, text="Generate Addresses from File")
 
-display_addresses_button = tk.Button(frame3, text="Display Addresses", command=display_addresses_content)
-display_addresses_button.pack(pady=10)
-
-# Кнопка для проверки баланса указанных адресов
-check_balance_button = tk.Button(frame3, text="Check Balance", command=lambda: check_balance(result_text3))
-check_balance_button.pack(pady=10)
-
+format_label = tk.Label(frame3, text="Choose type:")
+format_label.pack(pady=5)
+format_var = tk.IntVar()
+full_format_button = tk.Radiobutton(frame3, text="Seed, Private and Public addresses", variable=format_var, value=0)
+full_format_button.pack(anchor=tk.W)
+private_format_button = tk.Radiobutton(frame3, text="Private Address", variable=format_var, value=1)
+private_format_button.pack(anchor=tk.W)
+public_format_button = tk.Radiobutton(frame3, text="Public Address", variable=format_var, value=2)
+public_format_button.pack(anchor=tk.W)
+save_to_file_var1 = tk.BooleanVar()
+save_to_file_checkbox = tk.Checkbutton(frame3, text="Save to file", variable=save_to_file_var1)
+save_to_file_checkbox.pack(pady=10)
+generate_addresses_button = tk.Button(frame3, text="Generate Addresses", command=generate_addresses_from_file)
+generate_addresses_button.pack(pady=10)
 result_text3 = tk.Text(frame3, width=90, height=20)
 result_text3.pack(pady=10)
 
 
-# Пакетирование виджета Notebook
-notebook.pack(expand=True, fill="both")
+# 4 Tab
+frame4 = ttk.Frame(notebook)
+notebook.add(frame4, text="Check Balance")
 
+display_addresses_button = tk.Button(frame4, text="Display Addresses", command=display_addresses_content)
+display_addresses_button.pack(pady=10)
+check_balance_button = tk.Button(frame4, text="Check Balance", command=lambda: check_balance(result_text4))
+check_balance_button.pack(pady=10)
+result_text4 = tk.Text(frame4, width=90, height=20)
+result_text4.pack(pady=10)
+
+
+# Pack Notebook
+notebook.pack(expand=True, fill="both")
 root.mainloop()
