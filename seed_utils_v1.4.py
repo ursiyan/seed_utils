@@ -82,7 +82,6 @@ class SeedPhraseInputApp:
         seed_phrase = " ".join(entry.get() for entry in self.seed_entries)
         print("Seed Phrase:", seed_phrase)
         return seed_phrase
-
 # Function to generate Ethereum addresses from a seed phrase
 def generate_ethereum_addresses_with_toggle(seed_phrase, num_addresses, toggle_state):
     addresses = []
@@ -101,7 +100,6 @@ def generate_ethereum_addresses_with_toggle(seed_phrase, num_addresses, toggle_s
             private_keys.append(derived_account.key.hex())
 
     return addresses, private_keys
-
 def generate_addresses():
     num_addresses_label["text"] = "Количество генерируемых адресов:"
 
@@ -118,21 +116,38 @@ def generate_addresses():
     ethereum_addresses, private_keys = generate_ethereum_addresses_with_toggle(seed_phrase, num_addresses, toggle_state)
 
     result_text2.delete('1.0', tk.END)
+
     for i in range(num_addresses):
-        result_text2.insert(tk.END, f"{ethereum_addresses[i]}\n{private_keys[i]}\n")
+        if toggle_state == 1:  # Show only private addresses
+            content = f"{private_keys[i]}\n"
+        elif toggle_state == 2:  # Show only public addresses
+            content = f"{ethereum_addresses[i]}\n"
+        else:  # Show both public and private addresses
+            content = f"{ethereum_addresses[i]}\n{private_keys[i]}\n"
 
+        # Insert the content into the result_text2 widget
+        result_text2.insert(tk.END, content)
+
+    # Save the content to a file if required
     if save_to_file_var.get():
-        save_to_file2(ethereum_addresses, private_keys)
-
-def save_to_file2(addresses, private_keys):
+        if toggle_state == 1:
+            save_to_file2(private_keys)
+        elif toggle_state == 2:
+            save_to_file2(ethereum_addresses)
+        else:
+            save_to_file2(ethereum_addresses, private_keys)
+def save_to_file2(data1, data2=None):
     try:
         with open("addresses.txt", "w") as file:
-            for i in range(len(addresses)):
-                file.write(f"{addresses[i]}\n{private_keys[i]}\n")
+            if data2 is None:
+                for item in data1:
+                    file.write(f"{item}\n")
+            else:
+                for item1, item2 in zip(data1, data2):
+                    file.write(f"{item1}\n{item2}\n")
         messagebox.showinfo("File Saved", "Addresses saved to addresses.txt")
     except Exception as e:
         messagebox.showerror("Error", f"Failed to save to file: {str(e)}")
-
 def generate_seed():
 
     global normal_seed
@@ -183,13 +198,11 @@ def generate_seed():
 
     if save_to_file2.get():
         save_to_file()
-
 def save_to_file():
     global normal_seed
     with open("answer.txt", "w") as answer_file:
         answer_file.write(normal_seed)
     messagebox.showinfo("File Saved", "Results saved to answer.txt")
-
 root = tk.Tk()
 root.title("BIP39 Seed Phrase Restore")
 root.iconbitmap(default='icon.ico')  # Replace 'icon.ico' with your icon file
