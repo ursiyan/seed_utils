@@ -2,6 +2,8 @@ import hashlib
 import tkinter as tk
 from tkinter import ttk,messagebox
 from eth_account import Account
+import requests
+from web3 import Web3
 from mnemonic import Mnemonic
 
 normal_seed = ""
@@ -203,22 +205,78 @@ def save_to_file():
     with open("answer.txt", "w") as answer_file:
         answer_file.write(normal_seed)
     messagebox.showinfo("File Saved", "Results saved to answer.txt")
+
+def check_balance(result_text_widget):
+    web3_ethereum = Web3(Web3.HTTPProvider('https://eth-mainnet.g.alchemy.com/v2/rnfs9hVk83RyXM3Rtf6jJqmG05bDY-tc'))
+    web3_arbitrum = Web3(Web3.HTTPProvider('https://arb1.arbitrum.io/rpc'))
+    web3_bsc = Web3(Web3.HTTPProvider('https://bsc-dataseed.binance.org/'))
+    web3_polygon = Web3(Web3.HTTPProvider('https://polygon.llamarpc.com'))
+
+    # Replace 'YOUR_INFURA_PROJECT_ID' with your actual Infura Project ID
+
+    # Read addresses from the file
+    with open('addresses.txt', 'r') as file:
+        addresses = [line.strip() for line in file.readlines() if line.strip()]
+
+    # Define networks
+    networks = {
+        'Ethereum': web3_ethereum,
+        'Arbitrum': web3_arbitrum,
+        'Binance Smart Chain': web3_bsc,
+        'Polygon': web3_polygon
+    }
+
+    result_text3 = ""  # Initialize an empty string to store the results
+
+    # Function to get token balances for an address from Etherscan API
+    def get_token_balances(address, api_key):
+        url = f"https://api.etherscan.io/api?module=account&action=tokenbalance&contractaddress=0x55d398326f99059ff775485246999027b3197955&address={address}&tag=latest&apikey={api_key}"
+        response = requests.get(url)
+        data = response.json()
+        if data['status'] == '1':
+            token_balances = data['result']
+            return token_balances
+
+    for address in addresses:
+        result_text3 += f'\nChecking address: {address}\n'
+        for network_name, web3 in networks.items():
+            # Check ETH balance
+            eth_balance = web3.eth.get_balance(address)
+            # Convert wei to ether
+            eth_balance_eth = web3.from_wei(eth_balance, 'ether')
+            result_text3 += f'{network_name} balance: {eth_balance_eth}\n'
+
+            # Check token balances
+            # token_balances = get_token_balances(address, 'BACNF21ANHGIW4D1QYU3K5ASEHYEQAQAI4')
+            # if token_balances is not None:
+            #     result_text3 += f'{network_name} Token balances for {address}:\n'
+            #     result_text3 += str(token_balances) + '\n'
+            # else:
+            #     result_text3 += f'Token balances could not be retrieved for {address}.\n'
+
+    result_text_widget.delete('1.0', tk.END)
+    result_text_widget.insert(tk.END, result_text3)
+
+def display_addresses_content():
+    result_text3.delete('1.0', tk.END)
+    try:
+        with open('addresses.txt', 'r') as file:
+            addresses_content = file.read()
+            result_text3.insert(tk.END, addresses_content)
+    except FileNotFoundError:
+        messagebox.showerror("File Not Found", "The file 'addresses.txt' was not found.")
+
+
+
 root = tk.Tk()
 root.title("BIP39 Seed Phrase Restore")
 root.iconbitmap(default='icon.ico')  # Replace 'icon.ico' with your icon file
-
 # Создание виджета Notebook
 notebook = ttk.Notebook(root)
 
 # Создание первой вкладки
 frame1 = ttk.Frame(notebook)
 notebook.add(frame1, text="Restore Seed")
-
-# Добавление содержимого первой вкладки
-# seed_label1 = tk.Label(frame1, text="Введите 11 имеющихся слов (используйте ? для пропущенного слова):")
-# seed_label1.pack(pady=10)
-# seed_entry1 = tk.Entry(frame1, width=50)
-# seed_entry1.pack(pady=10)
 
 generate_button1 = tk.Button(frame1, text="Сгенерировать сид", command=generate_seed)
 generate_button1.pack(pady=10)
@@ -228,36 +286,44 @@ save_to_file_checkbox.pack(pady=10)
 result_text1 = tk.Text(frame1, width=90, height=20)
 result_text1.pack(pady=10)
 
+
 # Создание второй вкладки
 frame2 = ttk.Frame(notebook)
 notebook.add(frame2, text="Find Derived Addresses")
 
 # Добавление содержимого второй вкладки
 app = SeedPhraseInputApp(root)
-
 num_addresses_label = tk.Label(frame2, text="Количество генерируемых адресов:")
 num_addresses_label.pack(pady=5)
 num_addresses_entry = tk.Entry(frame2, width=10)
 num_addresses_entry.pack(pady=5)
-
 generate_button2 = tk.Button(frame2, text="Generate Addresses", command=generate_addresses)
 generate_button2.pack(pady=10)
 save_to_file_checkbox = tk.Checkbutton(frame2, text="Сохранить адреса в файл", variable=save_to_file_var)
 save_to_file_checkbox.pack(pady=10)
 toggle_var = tk.IntVar()
-
-
 private_toggle = tk.Radiobutton(frame2, text="Private Addresses Only", variable=toggle_var, value=1)
 private_toggle.pack(anchor=tk.W)
-
 public_toggle = tk.Radiobutton(frame2, text="Public Addresses Only", variable=toggle_var, value=2)
 public_toggle.pack(anchor=tk.W)
-
 both_toggle = tk.Radiobutton(frame2, text="Both Private and Public Addresses", variable=toggle_var, value=0)
 both_toggle.pack(anchor=tk.W)
-
 result_text2 = tk.Text(frame2, width=80, height=20)
 result_text2.pack(pady=10)
+
+frame3 = ttk.Frame(notebook)
+notebook.add(frame3, text="Check Balance")
+
+display_addresses_button = tk.Button(frame3, text="Display Addresses", command=display_addresses_content)
+display_addresses_button.pack(pady=10)
+
+# Кнопка для проверки баланса указанных адресов
+check_balance_button = tk.Button(frame3, text="Check Balance", command=lambda: check_balance(result_text3))
+check_balance_button.pack(pady=10)
+
+result_text3 = tk.Text(frame3, width=90, height=20)
+result_text3.pack(pady=10)
+
 
 # Пакетирование виджета Notebook
 notebook.pack(expand=True, fill="both")
