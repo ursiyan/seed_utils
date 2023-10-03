@@ -12,22 +12,26 @@ seed_phrase_index = ""
 seed_phrase_binary = ""
 ethereum_addresses = ""
 
-# Function to generate Ethereum addresses from a seed phrase
-def generate_ethereum_addresses(seed_phrase, num_addresses):
-    # Generate the master key from the seed phrase
-    mnemo = Mnemonic('english')
-    master_key = mnemo.to_seed(seed_phrase)
 
+
+# Function to generate Ethereum addresses from a seed phrase
+def generate_ethereum_addresses_with_toggle(seed_phrase, num_addresses, toggle_state):
     addresses = []
     private_keys = []
     for i in range(num_addresses):
         # Derive the Ethereum address and private key using the custom derivation path
         derived_account = Account.from_mnemonic(seed_phrase, account_path=DERIVATION_PATH.format(i))
-        addresses.append(derived_account.address)
-        private_keys.append(derived_account.key.hex())
+        if toggle_state == 1:  # Show only private addresses
+            addresses.append("")
+            private_keys.append(derived_account.key.hex())
+        elif toggle_state == 2:  # Show only public addresses
+            addresses.append(derived_account.address)
+            private_keys.append("")
+        else:  # Show both public and private addresses
+            addresses.append(derived_account.address)
+            private_keys.append(derived_account.key.hex())
 
     return addresses, private_keys
-
 
 # Enable Mnemonic features
 Account.enable_unaudited_hdwallet_features()
@@ -101,6 +105,8 @@ class SeedPhraseInputApp:
         return seed_phrase
 
 def generate_addresses():
+    num_addresses_label["text"] = "Количество генерируемых адресов:"
+
     try:
         num_addresses = int(num_addresses_entry.get())
         if num_addresses < 1:
@@ -109,13 +115,14 @@ def generate_addresses():
         messagebox.showerror("Error", "Please enter a valid number for addresses")
         return
 
-    ethereum_addresses, private_keys = generate_ethereum_addresses(seed_phrase, num_addresses)
+    toggle_state = toggle_var.get()  # Get the toggle state
+
+    ethereum_addresses, private_keys = generate_ethereum_addresses_with_toggle(seed_phrase, num_addresses, toggle_state)
 
     result_text2.delete('1.0', tk.END)
     for i in range(num_addresses):
-        result_text2.insert(tk.END, f"Address {i + 1}:\n{ethereum_addresses[i]}\nPrivate Key {i + 1}:\n{private_keys[i]}\n\n")
+        result_text2.insert(tk.END, f"{ethereum_addresses[i]}\n{private_keys[i]}\n")
 
-    # Save to file if the checkbox is checked
     if save_to_file_var.get():
         save_to_file2(ethereum_addresses, private_keys)
 
@@ -123,10 +130,11 @@ def save_to_file2(addresses, private_keys):
     try:
         with open("addresses.txt", "w") as file:
             for i in range(len(addresses)):
-                file.write(f"Address {i + 1}:\n{addresses[i]}\nPrivate Key {i + 1}:\n{private_keys[i]}\n\n")
+                file.write(f"{addresses[i]}\n{private_keys[i]}\n")
         messagebox.showinfo("File Saved", "Addresses saved to addresses.txt")
     except Exception as e:
         messagebox.showerror("Error", f"Failed to save to file: {str(e)}")
+
 
 def generate_seed():
 
@@ -176,7 +184,7 @@ def generate_seed():
     result_text1.delete("1.0", tk.END)
     result_text1.insert(tk.END, normal_seed)
 
-    if save_to_file_var.get():
+    if save_to_file2.get():
         save_to_file()
 
 def save_to_file():
@@ -227,6 +235,17 @@ generate_button2.pack(pady=10)
 save_to_file_checkbox = tk.Checkbutton(frame2, text="Сохранить адреса в файл", variable=save_to_file_var)
 save_to_file_checkbox.pack(pady=10)
 toggle_var = tk.IntVar()
+
+
+private_toggle = tk.Radiobutton(frame2, text="Private Addresses Only", variable=toggle_var, value=1)
+private_toggle.pack(anchor=tk.W)
+
+public_toggle = tk.Radiobutton(frame2, text="Public Addresses Only", variable=toggle_var, value=2)
+public_toggle.pack(anchor=tk.W)
+
+both_toggle = tk.Radiobutton(frame2, text="Both Private and Public Addresses", variable=toggle_var, value=0)
+both_toggle.pack(anchor=tk.W)
+
 result_text2 = tk.Text(frame2, width=80, height=20)
 result_text2.pack(pady=10)
 
