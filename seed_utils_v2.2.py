@@ -44,57 +44,44 @@ class SeedPhraseInputApp:
         submit_button.pack(pady=10)
 
     def handle_paste(self, event, entry):
-        clipboard_text = self.master.clipboard_get()
-        words = clipboard_text.strip().split()
+        # Get the input from the first entry
+        input_text = self.seed_entries[0].get()
+        words = input_text.strip().split()
 
-        for i in range(min(len(words), len(self.seed_entries))):
+        # Ensure we only fill up to the available entry fields
+        num_entries = min(len(words), len(self.seed_entries))
+
+        for i in range(num_entries):
             self.seed_entries[i].delete(0, tk.END)
             self.seed_entries[i].insert(tk.END, words[i])
 
-    def submit_seed_phrase(self):
-        seed_words = [entry.get() for entry in self.seed_entries if entry.get()]
-        seed_phrase = " ".join(seed_words)
-        print("Seed Phrase:", seed_phrase)
-    def handle_paste(self, event, entry):
-        # Get clipboard content and split into words
-        clipboard_text = self.master.clipboard_get()
-        words = clipboard_text.strip().split()
-
-        # Insert words into corresponding entry fields
-        for i in range(min(len(words), len(self.seed_entries))):
-            self.seed_entries[i].delete(0, tk.END)
-            self.seed_entries[i].insert(tk.END, words[i])
+        # Update seed_words based on the filled entries
+        self.update_seed_words()
 
     def submit_seed_phrase(self):
         seed_words = [entry.get() for entry in self.seed_entries if entry.get()]
         seed_phrase = " ".join(seed_words)
         print("Seed Phrase:", seed_phrase)
 
-    def handle_paste(self, event, entry):
-        # Get clipboard content and split into words
-        clipboard_text = self.master.clipboard_get()
-        words = clipboard_text.strip().split()
+    def submit_seed_phrase(self):
+        seed_words = [entry.get() for entry in self.seed_entries if entry.get()]
+        seed_phrase = " ".join(seed_words)
+        print("Seed Phrase:", seed_phrase)
 
-        # Insert words into corresponding entry fields
-        for i in range(min(len(words), len(self.seed_entries))):
-            self.seed_entries[i].delete(0, tk.END)
-            self.seed_entries[i].insert(tk.END, words[i])
 
     def submit_seed_phrase(self):
         global seed_phrase
         seed_phrase = " ".join(entry.get() for entry in self.seed_entries)
         print("Seed Phrase:", seed_phrase)
         return seed_phrase
-# Function to generate Ethereum addresses from a seed phrase
-
 
 # 1 Tab
 def generate_seed():
-
     global normal_seed
     global seed_phrase
     seed_phrase_s = seed_phrase
 
+    # Split the seed phrase into words
     seed_phrase = seed_phrase_s.split(" ")
 
     word_list = word_list_str.strip().split(" ")
@@ -261,10 +248,11 @@ def save_to_file3():
 
 # 4 Tab
 def check_balance(result_text_widget):
+    global hide_zero_balances
     web3_ethereum = Web3(Web3.HTTPProvider('https://eth-mainnet.g.alchemy.com/v2/rnfs9hVk83RyXM3Rtf6jJqmG05bDY-tc'))
     web3_arbitrum = Web3(Web3.HTTPProvider('https://arb1.arbitrum.io/rpc'))
     web3_bsc = Web3(Web3.HTTPProvider('https://bsc-dataseed.binance.org/'))
-    web3_polygon = Web3(Web3.HTTPProvider('https://polygon.llamarpc.com'))
+    web3_polygon = Web3(Web3.HTTPProvider('https://polygon.rpc.blxrbdn.com'))
 
     # Replace 'YOUR_INFURA_PROJECT_ID' with your actual Infura Project ID
 
@@ -281,32 +269,31 @@ def check_balance(result_text_widget):
     }
 
     result_text4 = ""  # Initialize an empty string to store the results
+    toggle_zero_balances = hide_zero_balances_var.get()  # Use hide_zero_balances_var.get() instead of toggle_zero_balances
+    if toggle_zero_balances == True:
+           for address in addresses:
+                has_non_zero_balance = False  # Flag to track if the address has a non-zero balance
 
-    # Function to get token balances for an address from Etherscan API
-    def get_token_balances(address, api_key):
-        url = f"https://api.etherscan.io/api?module=account&action=tokenbalance&contractaddress=0x55d398326f99059ff775485246999027b3197955&address={address}&tag=latest&apikey={api_key}"
-        response = requests.get(url)
-        data = response.json()
-        if data['status'] == '1':
-            token_balances = data['result']
-            return token_balances
+                result_text4 += f'\nChecking address: {address}\n'
+                for network_name, web3 in networks.items():
+                    # Check ETH balance
+                    eth_balance = web3.eth.get_balance(address)
+                    # Convert wei to ether
+                    eth_balance_eth = web3.from_wei(eth_balance, 'ether')
 
-    for address in addresses:
-        result_text4 += f'\nChecking address: {address}\n'
-        for network_name, web3 in networks.items():
-            # Check ETH balance
-            eth_balance = web3.eth.get_balance(address)
-            # Convert wei to ether
-            eth_balance_eth = web3.from_wei(eth_balance, 'ether')
-            result_text4 += f'{network_name} balance: {eth_balance_eth}\n'
-
-            # Check token balances
-            # token_balances = get_token_balances(address, 'BACNF21ANHGIW4D1QYU3K5ASEHYEQAQAI4')
-            # if token_balances is not None:
-            #     result_text4 += f'{network_name} Token balances for {address}:\n'
-            #     result_text4 += str(token_balances) + '\n'
-            # else:
-            #     result_text4 += f'Token balances could not be retrieved for {address}.\n'
+                    # Display the address details only if it has a non-zero balance
+                    if eth_balance > 0:
+                        has_non_zero_balance = True
+                        result_text4 += f'{network_name} balance: {eth_balance_eth}\n'
+    else:
+            for address in addresses:
+                result_text4 += f'\nChecking address: {address}\n'
+                for network_name, web3 in networks.items():
+                    # Check ETH balance
+                    eth_balance = web3.eth.get_balance(address)
+                    # Convert wei to ether
+                    eth_balance_eth = web3.from_wei(eth_balance, 'ether')
+                    result_text4 += f'{network_name} balance: {eth_balance_eth}\n'
 
     result_text_widget.delete('1.0', tk.END)
     result_text_widget.insert(tk.END, result_text4)
@@ -318,6 +305,9 @@ def display_addresses_content():
             result_text4.insert(tk.END, addresses_content)
     except FileNotFoundError:
         messagebox.showerror("File Not Found", "The file 'addresses.txt' was not found.")
+hide_zero_balances = False
+
+
 
 
 
@@ -390,6 +380,11 @@ result_text3.pack(pady=10)
 # 4 Tab
 frame4 = ttk.Frame(notebook)
 notebook.add(frame4, text="Check Balance")
+
+
+hide_zero_balances_var = tk.BooleanVar()  # Define hide_zero_balances_var here
+toggle_zero_balances_checkbox = tk.Checkbutton(frame4, text="Hide Zero Balances", variable=hide_zero_balances_var)
+toggle_zero_balances_checkbox.pack(pady=10)
 
 display_addresses_button = tk.Button(frame4, text="Display Addresses", command=display_addresses_content)
 display_addresses_button.pack(pady=10)
